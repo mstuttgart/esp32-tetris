@@ -15,7 +15,7 @@ Modular, **object-oriented C++** implementation of the classic **Tetris** game f
 * **Dynamic Difficulty Progression:** The fall speed automatically increases every 500 accumulated points.
 * **Modular Code:** Split between interface (`include/`) and implementation (`src/`), documented in the Doxygen standard.
 
-![docs/project_image.jpg](docs/project_image.jpg)
+![docs/project_image.jpg](docs/project_image.jpeg)
 ---
 
 ## 🛠️ Bill of Materials (BOM)
@@ -25,8 +25,6 @@ Modular, **object-oriented C++** implementation of the classic **Tetris** game f
 | **Microcontroller** | ESP32-WROOM-32 DevKit V1 (30 pins) | 1 |
 | **Graphic Display** | 1.54" TFT IPS LCD ST7789 ($240 \times 240$, SPI, 3.3V) | 1 |
 | **Controller** | 2-Axis Analog Joystick Module + Button (KY-023) | 1 |
-| **Prototyping** | Breadboard (830 points) + Male-Female / Male-Male jumpers | - |
-| **Power** | Micro-USB / USB-C data cable connected to the PC or a 5V supply | 1 |
 
 ---
 
@@ -178,3 +176,7 @@ pio test -e native
 ## 🔧 Quick Calibration (If the Axes Are Inverted)
 
 Depending on the physical orientation in which the joystick module is placed on the breadboard, if **Left/Right** or **Up/Down** end up inverted, simply swap the `< JOYSTICK_DEADZONE_LOW` and `> JOYSTICK_DEADZONE_HIGH` comparisons inside `Tetris::update()` in `src/tetris.cpp`.
+
+## ⚖️ Disclaimer
+
+**Tetris** is a registered trademark of **Tetris Holding**. This is an independent, non-commercial, open-source project developed strictly for educational and study purposes, and is not affiliated with, endorsed by, or associated with The Tetris Company or Tetris Holding.

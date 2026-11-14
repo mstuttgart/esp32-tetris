@@ -6,7 +6,7 @@
  * board geometry, piece colors and tetromino shape definitions.
  */
 
-#pragma once // Evita inclusão duplicada (substitui os antigos #ifndef / #define)
+#pragma once
 
 #include <Arduino.h>
 #include <TFT_eSPI.h>
