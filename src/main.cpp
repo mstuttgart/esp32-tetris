@@ -99,6 +99,14 @@ bool checkCollision(int newX, int newY, uint8_t shape[4][4])
   return false;
 }
 
+void updateScoreUI() {
+  tft.fillRect(140, 45, 95, 30, TFT_BLACK);
+  tft.setTextColor(TFT_WHITE);
+  tft.setTextSize(2);
+  tft.setCursor(140, 50);
+  tft.print(score);
+}
+
 void drawBlock(int column, int row, uint16_t color)
 {
   int px = BOARD_X + column * BLOCK_SIZE;
@@ -225,6 +233,7 @@ void resetGame()
   memset(board, 0, sizeof(board));
 
   gameOver = false;
+  score = 0;
   lastFrameTime = 0;
   gravityFrames = INITAL_GRAVITY_FRAMES;
 
@@ -233,6 +242,14 @@ void resetGame()
 
   // Draw board
   tft.drawRect(BOARD_X - 2, BOARD_Y - 2, BOARD_COLS * BLOCK_SIZE + 4, BOARD_ROWS * BLOCK_SIZE + 4, TFT_WHITE); // Draw the board border
+
+  // Painel lateral
+  tft.setTextColor(TFT_CYAN);
+  tft.setTextSize(2);
+  tft.setCursor(140, 20);
+  tft.print("SCORE");
+  
+  updateScoreUI();
 
   spawnShape();
 }
