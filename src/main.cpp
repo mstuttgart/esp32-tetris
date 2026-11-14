@@ -6,11 +6,17 @@
 
 TFT_eSPI tft = TFT_eSPI();
 
+// Frames per second for the game loop
+const int FPS = 60;
+const unsigned long DELTA_FRAME_TIME = 1000000 / FPS; // 16.666 microssegundos
+unsigned long lastFrameTime = 0;
+
 // Serial communication baud rate
 const int SERIAL_BAUD_RATE = 115200;
 
 // Fall speed in milliseconds
-const int FALL_SPEED = 500;
+const int NORMAL_FALL_SPEED = 50;
+const int FAST_FALL_SPEED = 500;
 
 // Joystick pins and variables
 const int JOYSTICK_X_PIN = 34;
@@ -57,8 +63,9 @@ const uint8_t SHAPES[7][4][4] = {
 uint8_t currentShape[4][4] = {0};
 
 int currentType, currentX, currentY;
+unsigned long lastFallTime = 0;
 
-int fallSpeed = FALL_SPEED;
+int fallSpeed = NORMAL_FALL_SPEED;
 
 void drawBlock(int column, int row, uint16_t color)
 {
@@ -125,13 +132,16 @@ void resetGame()
   // reset the game board
   memset(board, 0, sizeof(board));
 
-  fallSpeed = FALL_SPEED;
+  fallSpeed = NORMAL_FALL_SPEED;
+  lastFrameTime = 0;
 
   // Clear the screen with black color
   tft.fillScreen(TFT_BLACK);
 
   // Draw board
   tft.drawRect(BOARD_X - 2, BOARD_Y - 2, BOARD_COLS * BLOCK_SIZE + 4, BOARD_ROWS * BLOCK_SIZE + 4, TFT_WHITE); // Draw the board border
+
+  spawnShape();
 }
 
 void setup()
@@ -156,4 +166,28 @@ void setup()
 void loop()
 {
   // put your main code here, to run repeatedly:
+
+  unsigned long nowFrameTime = micros();
+
+  int currentSpeed = NORMAL_FALL_SPEED;
+
+  unsigned long currentTimeMillis = 0;
+
+  if (nowFrameTime - lastFrameTime >= DELTA_FRAME_TIME)
+  {
+
+    lastFrameTime = nowFrameTime;
+
+    currentTimeMillis = millis();
+
+    currentSpeed = NORMAL_FALL_SPEED;
+
+    if (currentTimeMillis - lastFallTime >= currentSpeed)
+    {
+      lastFallTime = currentTimeMillis;
+      drawShape(true);
+      currentY++;       // Move the shape down by one row each frame
+      drawShape(false); // Redraw the shape at the new position
+    }
+  }
 }
