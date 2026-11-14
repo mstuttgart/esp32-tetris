@@ -44,6 +44,8 @@ const int BLOCK_SIZE = 11;
 const int BOARD_X = 15;
 const int BOARD_Y = 10;
 
+const int MAX_SCORE_INCREASE_LEVEL = 500;
+
 // Game board array
 uint8_t board[BOARD_ROWS][BOARD_COLS] = {0};
 
@@ -59,13 +61,13 @@ const uint16_t COLORS[8] = {
 };
 
 const uint8_t SHAPES[7][4][4] = {
-    {{0, 0, 0, 0}, {1, 1, 1, 1}, {0, 0, 0, 0}, {0, 0, 0, 0}}, // I
+    {{1, 1, 1, 1}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}}, // I
     {{1, 0, 0, 0}, {1, 1, 1, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}}, // J
     {{0, 0, 1, 0}, {1, 1, 1, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}}, // L
     {{0, 1, 1, 0}, {0, 1, 1, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}}, // O
     {{0, 1, 1, 0}, {1, 1, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}}, // S
     {{0, 1, 0, 0}, {1, 1, 1, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}}, // T
-    {{1, 1, 0, 0}, {0, 1, 1, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}}, // Z
+    {{1, 1, 0, 0}, {0, 1, 1, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}}  // Z
 };
 
 uint8_t currentShape[4][4] = {0};
@@ -99,7 +101,19 @@ bool checkCollision(int newX, int newY, uint8_t shape[4][4])
   return false;
 }
 
-void updateScoreUI() {
+void triggerGameOver()
+{
+  gameOver = true;
+  tft.fillRect(20, 100, 200, 45, TFT_RED);
+  tft.drawRect(20, 100, 200, 45, TFT_WHITE);
+  tft.setTextColor(TFT_WHITE, TFT_RED);
+  tft.setTextSize(2);
+  tft.setCursor(55, 115);
+  tft.print("GAME OVER");
+}
+
+void updateScoreUI()
+{
   tft.fillRect(140, 45, 95, 30, TFT_BLACK);
   tft.setTextColor(TFT_WHITE);
   tft.setTextSize(2);
@@ -139,7 +153,7 @@ void drawShape(bool erase)
         int by = currentY + row;
 
         // Only draw the block if it is within the board boundaries
-        if (by >= 0 && by < BOARD_ROWS && bx >= 0 && bx < BOARD_COLS)
+        if (bx >= 0 && bx < BOARD_COLS && by >= 0 && by < BOARD_ROWS)
         {
           drawBlock(bx, by, erase ? TFT_BLACK : COLORS[currentType + 1]);
         }
@@ -152,7 +166,7 @@ void spawnShape()
 {
   currentType = random(0, 7);
   currentX = 3;
-  currentY = -4;
+  currentY = 0;
 
   // Copy the shape into the currentShape array
   for (int row = 0; row < 4; row++)
@@ -165,12 +179,8 @@ void spawnShape()
 
   if (checkCollision(currentX, currentY, currentShape))
   {
-    gameOver = true;
-    tft.fillRect(20, 100, 200, 45, TFT_RED);
-    tft.setTextColor(TFT_WHITE);
-    tft.setTextSize(2);
-    tft.setCursor(55, 115);
-    tft.print("GAME OVER");
+    drawShape(false);
+    triggerGameOver();
   }
   else
   {
@@ -180,6 +190,8 @@ void spawnShape()
 
 void lockShape()
 {
+  bool overflowTop = false;
+
   for (int row = 0; row < 4; row++)
   {
     for (int col = 0; col < 4; col++)
@@ -189,16 +201,23 @@ void lockShape()
         int bx = currentX + col;
         int by = currentY + row;
 
-        if (by >= 0 && by < BOARD_ROWS && bx >= 0 && bx < BOARD_COLS)
+        if (by < 0)
+        {
+          overflowTop = true;
+        }
+        else
         {
           board[by][bx] = currentType + 1;
         }
       }
     }
   }
-  spawnShape();
-}
 
+  if (overflowTop)
+    triggerGameOver();
+  else
+    spawnShape();
+}
 
 void rotatePiece()
 {
@@ -226,6 +245,48 @@ void rotatePiece()
   }
 }
 
+void clearLines()
+{
+  int linesCleared = 0;
+  for (int r = BOARD_ROWS - 1; r >= 0; r--)
+  {
+    bool full = true;
+    for (int c = 0; c < BOARD_COLS; c++)
+    {
+      if (board[r][c] == 0)
+      {
+        full = false;
+        break;
+      }
+    }
+    if (full)
+    {
+      linesCleared++;
+      for (int row = r; row > 0; row--)
+        for (int c = 0; c < BOARD_COLS; c++)
+          board[row][c] = board[row - 1][c];
+      for (int c = 0; c < BOARD_COLS; c++)
+        board[0][c] = 0;
+      r++;
+    }
+  }
+
+  if (linesCleared > 0)
+  {
+    score += linesCleared * 100;
+
+    int level = score / MAX_SCORE_INCREASE_LEVEL;
+
+    gravityFrames = max(6, INITAL_GRAVITY_FRAMES - (level * 2));
+
+    updateScoreUI();
+
+    for (int r = 0; r < BOARD_ROWS; r++)
+      for (int c = 0; c < BOARD_COLS; c++)
+        drawBlock(c, r, COLORS[board[r][c]]);
+  }
+}
+
 void resetGame()
 {
 
@@ -248,7 +309,7 @@ void resetGame()
   tft.setTextSize(2);
   tft.setCursor(140, 20);
   tft.print("SCORE");
-  
+
   updateScoreUI();
 
   spawnShape();
