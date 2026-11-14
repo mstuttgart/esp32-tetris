@@ -10,8 +10,7 @@ TFT_eSPI tft = TFT_eSPI();
 const int SERIAL_BAUD_RATE = 115200;
 
 // Fall speed in milliseconds
-const int FALL_SPEED = 500; 
-
+const int FALL_SPEED = 500;
 
 // Joystick pins and variables
 const int JOYSTICK_X_PIN = 34;
@@ -34,17 +33,101 @@ const int BOARD_Y = 10;
 // Game board array
 uint8_t board[BOARD_ROWS][BOARD_COLS] = {0};
 
+const uint16_t COLORS[8] = {
+    TFT_BLACK,
+    TFT_CYAN,
+    TFT_BLUE,
+    TFT_ORANGE,
+    TFT_YELLOW,
+    TFT_GREEN,
+    TFT_MAGENTA,
+    TFT_RED,
+};
+
+const uint8_t SHAPES[7][4][4] = {
+    {{0, 0, 0, 0}, {1, 1, 1, 1}, {0, 0, 0, 0}, {0, 0, 0, 0}}, // I
+    {{1, 0, 0, 0}, {1, 1, 1, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}}, // J
+    {{0, 0, 1, 0}, {1, 1, 1, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}}, // L
+    {{0, 1, 1, 0}, {0, 1, 1, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}}, // O
+    {{0, 1, 1, 0}, {1, 1, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}}, // S
+    {{0, 1, 0, 0}, {1, 1, 1, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}}, // T
+    {{1, 1, 0, 0}, {0, 1, 1, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}}, // Z
+};
+
+uint8_t currentShape[4][4] = {0};
+
+int currentType, currentX, currentY;
 
 int fallSpeed = FALL_SPEED;
 
-void resetGame(){
+void drawBlock(int column, int row, uint16_t color)
+{
+  int px = BOARD_X + column * BLOCK_SIZE;
+  int py = BOARD_Y + row * BLOCK_SIZE;
+
+  if (color == TFT_BLACK)
+  {
+    tft.fillRect(px, py, BLOCK_SIZE, BLOCK_SIZE, TFT_BLACK);
+  }
+  else
+  {
+    // Fill rect with the block color, leaving a 1-pixel border for the block outline
+    tft.fillRect(px + 1, py + 1, BLOCK_SIZE - 2, BLOCK_SIZE - 2, color);
+
+    // draw the block border
+    tft.drawRect(px, py, BLOCK_SIZE, BLOCK_SIZE, TFT_DARKGREY);
+  }
+}
+
+void drawShape(bool erase)
+{
+
+  for (int row = 0; row < 4; row++)
+  {
+    for (int col = 0; col < 4; col++)
+    {
+      if (currentShape[row][col])
+      {
+        int bx = currentX + col;
+        int by = currentY + row;
+
+        // Only draw the block if it is within the board boundaries
+        if (by >= 0 && by < BOARD_ROWS && bx >= 0 && bx < BOARD_COLS)
+        {
+          drawBlock(bx, by, erase ? TFT_BLACK : COLORS[currentType + 1]);
+        }
+      }
+    }
+  }
+}
+
+void spawnShape()
+{
+  currentType = random(0, 7);
+  currentX = 3;
+  currentY = 0;
+
+  // Copy the shape into the currentShape array
+  for (int row = 0; row < 4; row++)
+  {
+    for (int col = 0; col < 4; col++)
+    {
+      currentShape[row][col] = SHAPES[currentType][row][col];
+    }
+  }
+
+  drawShape(false);
+}
+
+void resetGame()
+{
 
   // reset the game board
   memset(board, 0, sizeof(board));
 
   fallSpeed = FALL_SPEED;
 
-   // Clear the screen with black color
+  // Clear the screen with black color
   tft.fillScreen(TFT_BLACK);
 
   // Draw board
@@ -64,9 +147,8 @@ void setup()
   randomSeed(analogRead(36));
 
   tft.init();
-  tft.setRotation(0);        // Set the display rotation if needed
-  tft.invertDisplay(true);   // Invert the display colors if needed
-
+  tft.setRotation(0);      // Set the display rotation if needed
+  tft.invertDisplay(true); // Invert the display colors if needed
 
   resetGame();
 }
