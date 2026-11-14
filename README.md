@@ -1,118 +1,113 @@
-```markdown
-# 🕹️ Tetris ESP32 — 60 FPS & Joystick Analógico
+# 🕹️ ESP32 Tetris — 60 FPS & Analog Joystick
 
-Implementação modular em **C++ orientado a objetos** do clássico jogo **Tetris** para o microcontrolador **ESP32 DevKit V1**, utilizando um display colorido **TFT IPS 1.54" ST7789 (240x240)** via SPI de hardware e controle por **Joystick Analógico (KY-023)** com temporização determinística travada em **60 FPS**.
-
----
-
-## ✨ Funcionalidades e Arquitetura
-
-* **Loop Determinístico a 60 FPS:** Controle rigoroso de taxa de quadros via `micros()` ($16.666\ \mu\text{s}$ por quadro) com temporização baseada em contadores de frames inteiros (*Frame-Based Timing*).
-* **Renderização Parcial Sem Flicker:** Atualiza apenas os blocos alterados no tabuleiro usando a biblioteca `TFT_eSPI`, mantendo resposta visual instantânea.
-* **Lógica Baseada em Matrizes:**
-  * Matriz fixa do tabuleiro (`20x10`).
-  * Moldes das 7 peças clássicas (`I, J, L, O, S, T, Z`) alinhados no topo (`4x4`) com rotação por transposição de matriz.
-  * Detecção de colisão lateral, fundo, peças fixas, *Block Out* e *Lock Out* (Game Over).
-* **Progressão Dinâmica de Dificuldade:** A velocidade de queda aumenta automaticamente a cada 500 pontos acumulados.
-* **Código Modular:** Separado entre interface (`include/`) e implementação (`src/`), documentado no padrão Doxygen.
+Modular, **object-oriented C++** implementation of the classic **Tetris** game for the **ESP32 DevKit V1** microcontroller, using a **1.54" TFT IPS ST7789 (240x240)** color display over hardware SPI and an **Analog Joystick (KY-023)** for input, with deterministic timing locked at **60 FPS**.
 
 ---
 
-## 🛠️ Lista de Componentes (BOM)
+## ✨ Features and Architecture
 
-| Componente | Especificação | Qtd. | Referência Visual |
+* **Deterministic 60 FPS Loop:** Strict frame-rate control via `micros()` ($16.666\ \mu\text{s}$ per frame) with integer frame-counter based timing (*Frame-Based Timing*).
+* **Flicker-Free Partial Rendering:** Only redraws the blocks that changed on the board using the `TFT_eSPI` library, keeping the visual response instantaneous.
+* **Matrix-Based Logic:**
+  * Fixed board matrix (`20x10`).
+  * Templates for the 7 classic pieces (`I, J, L, O, S, T, Z`) top-aligned in a `4x4` grid, with rotation by matrix transposition.
+  * Collision detection for walls, floor, locked pieces, *Block Out* and *Lock Out* (Game Over).
+* **Dynamic Difficulty Progression:** The fall speed automatically increases every 500 accumulated points.
+* **Modular Code:** Split between interface (`include/`) and implementation (`src/`), documented in the Doxygen standard.
+
+![docs/project_image.jpg](docs/project_image.jpg)
+---
+
+## 🛠️ Bill of Materials (BOM)
+
+| Component | Specification | Qty. |
+| :--- | :--- | :---: |
+| **Microcontroller** | ESP32-WROOM-32 DevKit V1 (30 pins) | 1 |
+| **Graphic Display** | 1.54" TFT IPS LCD ST7789 ($240 \times 240$, SPI, 3.3V) | 1 |
+| **Controller** | 2-Axis Analog Joystick Module + Button (KY-023) | 1 |
+| **Prototyping** | Breadboard (830 points) + Male-Female / Male-Male jumpers | - |
+| **Power** | Micro-USB / USB-C data cable connected to the PC or a 5V supply | 1 |
+
+---
+
+## 🔌 Wiring Diagram (Pinout)
+
+> ⚠️ **Warning:** Power both the ST7789 display and the Joystick module exclusively from the ESP32's **3V3** pin. The ESP32 ADC operates in the `0V to 3.3V` range and the joystick's analog pins must be connected to the **ADC1** channels (`GPIO 34` and `GPIO 35`).
+
+### 1. 1.54" TFT IPS ST7789 Display (VSPI Bus)
+
+| Display Pin | ESP32 Silkscreen | GPIO in Code | Function |
 | :--- | :--- | :---: | :--- |
-| **Microcontrolador** | ESP32-WROOM-32 DevKit V1 (30 pinos) | 1 | ![ESP32 DevKit](https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/ESP32_DevKitC_V4.jpg/320px-ESP32_DevKitC_V4.jpg) |
-| **Display Gráfico** | LCD TFT IPS 1.54" ST7789 ($240 \times 240$, SPI, 3.3V) | 1 | ![Display TFT SPI](https://upload.wikimedia.org/wikipedia/commons/thumb/4/4e/1.8_inch_TFT_LCD_display_module.jpg/320px-1.8_inch_TFT_LCD_display_module.jpg) |
-| **Controle** | Módulo Joystick Analógico 2 Eixos + Botão (KY-023) | 1 | ![Joystick KY-023](https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/Thumb_joystick_module.jpg/320px-Thumb_joystick_module.jpg) |
-| **Prototipagem** | Protoboard (830 pontos) + Jumpers Macho-Fêmea / Macho-Macho | - | ![Protoboard](https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/400_points_breadboard.jpg/320px-400_points_breadboard.jpg) |
-| **Alimentação** | Cabo Micro-USB / USB-C de dados conectado ao PC ou fonte 5V | 1 | — |
+| **GND** | `GND` | `GND` | Common ground |
+| **VCC** | `3V3` | `3.3V` | Logic power |
+| **SCL / SCK** | `D18` | `18` | SPI clock (*VSPI SCK*) |
+| **SDA / MOSI** | `D23` | `23` | SPI data (*VSPI MOSI*) |
+| **RES / RST** | `D4` | `4` | Controller reset |
+| **DC** | `D2` | `2` | Command / Data select |
+| **CS** *(optional)* | `D5` | `5` | Chip Select *(ignore if your module has 7 pins)* |
+| **BLK / LED** | `3V3` | `3.3V` | Backlight (100%) |
+
+### 2. Analog Joystick Module (KY-023)
+
+| Joystick Pin | ESP32 Silkscreen | GPIO in Code | Function |
+| :--- | :--- | :---: | :--- |
+| **GND** | `GND` | `GND` | Common ground |
+| **+5V / VCC** | `3V3` | `3.3V` | 3.3V voltage reference |
+| **VRx** | `D34` | `34` | Horizontal axis (Left / Right) |
+| **VRy** | `D35` | `35` | Vertical axis (Up = Rotate / Down = Soft drop) |
+| **SW** | `D32` | `32` | Stick center button (Rotate / Restart) |
 
 ---
 
-## 🔌 Diagrama de Ligação (Pinagem)
-
-> ⚠️ **Atenção:** Alimente tanto o display ST7789 quanto o módulo Joystick utilizando exclusivamente o pino **3V3** do ESP32. O ADC do ESP32 opera na faixa de `0V a 3.3V` e os pinos analógicos do joystick devem ser ligados nos canais **ADC1** (`GPIO 34` e `GPIO 35`).
-
-### 1. Display TFT IPS 1.54" ST7789 (Barramento VSPI)
-
-| Pino no Display | Serigrafia no ESP32 | GPIO no Código | Função |
-| :--- | :--- | :---: | :--- |
-| **GND** | `GND` | `GND` | Terra comum |
-| **VCC** | `3V3` | `3.3V` | Alimentação lógica |
-| **SCL / SCK** | `D18` | `18` | Clock SPI (*VSPI SCK*) |
-| **SDA / MOSI** | `D23` | `23` | Dados SPI (*VSPI MOSI*) |
-| **RES / RST** | `D4` | `4` | Reset do controlador |
-| **DC** | `D2` | `2` | Seleção Comando / Dado |
-| **CS** *(opcional)* | `D5` | `5` | Chip Select *(ignore se o módulo tiver 7 pinos)* |
-| **BLK / LED** | `3V3` | `3.3V` | Luz de fundo (*Backlight* 100%) |
-
-### 2. Módulo Joystick Analógico (KY-023)
-
-| Pino no Joystick | Serigrafia no ESP32 | GPIO no Código | Função |
-| :--- | :--- | :---: | :--- |
-| **GND** | `GND` | `GND` | Terra comum |
-| **+5V / VCC** | `3V3` | `3.3V` | Referência de tensão de 3.3V |
-| **VRx** | `D34` | `34` | Eixo Horizontal (Esquerda / Direita) |
-| **VRy** | `D35` | `35` | Eixo Vertical (Cima = Girar / Baixo = Cair rápido) |
-| **SW** | `D32` | `32` | Botão central do manche (Girar / Reiniciar) |
-
----
-
-## 📂 Estrutura do Projeto
+## 📂 Project Structure
 
 ```text
-tetris_esp32/
+esp_tetris/
 ├── include/
-│   ├── config.h          # Pinagem, dimensões da tela, FPS e moldes das peças
-│   └── tetris.h          # Declaração da classe TetrisGame (documentação Doxygen)
+│   ├── config.h          # Pinout, screen dimensions, FPS and piece templates
+│   └── tetris.h          # Tetris class declaration (Doxygen documentation)
 ├── src/
-│   ├── main.cpp          # Setup de hardware, leitura do Joystick e loop a 60 FPS
-│   └── tetris.cpp        # Motor lógico, colisões, rotação e renderização parcial
+│   ├── main.cpp          # Entry point: wires the game to the Arduino runtime
+│   └── tetris.cpp        # Game engine: collisions, rotation and partial rendering
 ├── test/
-│   ├── mocks/            # Mocks de Arduino.h e TFT_eSPI.h para testes nativos
-│   ├── test_logic/       # Testes unitários da lógica do jogo (Unity)
-│   └── test_integration/ # Testes de integração do game loop (Unity)
-├── platformio.ini        # Configuração da placa, dependências e flags da TFT_eSPI
+│   ├── mocks/            # Arduino.h and TFT_eSPI.h mocks for native tests
+│   ├── test_logic/       # Unit tests for the game logic (Unity)
+│   └── test_integration/ # Integration tests for the game loop (Unity)
+├── platformio.ini        # Board configuration, dependencies and TFT_eSPI flags
 └── README.md
-
 ```
 
-## 🚀 Como Compilar e Gravar com PlatformIO (`pio`)
+## 🚀 How to Build and Flash with PlatformIO (`pio`)
 
-### Pré-requisitos
+### Prerequisites
 
-1. **PlatformIO Core (CLI)** instalado ou extensão **PlatformIO IDE** no VS Code.
-2. *(Linux)* Permissões de acesso à porta serial configuradas para o seu usuário:
+1. **PlatformIO Core (CLI)** installed, or the **PlatformIO IDE** extension in VS Code.
+2. *(Linux)* Serial port access permissions configured for your user:
 ```bash
 sudo usermod -aG dialout $USER
-
 ```
 
+*(Restart your session after running the command if this is the first time).*
 
-*(Reinicie a sessão após executar o comando caso seja a primeira vez).*
-
-### Passo 1: Clonar o Repositório
+### Step 1: Clone the Repository
 
 ```bash
-git clone [https://github.com/seu-usuario/tetris-esp32.git](https://github.com/seu-usuario/tetris-esp32.git)
-cd tetris-esp32
-
+git clone https://github.com/mstuttgart/esp32-tetris.git
+cd esp32-tetris
 ```
 
-### Passo 2: Conferir o `platformio.ini`
+### Step 2: Check `platformio.ini`
 
-O projeto já inclui todas as flags necessárias da `TFT_eSPI` (incluindo `-D LOAD_GLCD=1` para renderização da fonte do placar):
+The project already includes all the required `TFT_eSPI` flags (including `-D LOAD_GLCD=1` for rendering the score font):
 
 ```ini
-[env:esp32doit-devkit-v1]
+[env:upesy_wroom]
 platform = espressif32
-board = esp32doit-devkit-v1
+board = upesy_wroom
 framework = arduino
 monitor_speed = 115200
 
-lib_deps =
-    bodmer/TFT_eSPI @ ^2.5.43
+lib_deps = bodmer/TFT_eSPI@^2.5.43
 
 build_flags =
     -D DISABLE_ALL_LIBRARY_WARNINGS=1
@@ -122,73 +117,64 @@ build_flags =
     -D TFT_HEIGHT=240
     -D TFT_MOSI=23
     -D TFT_SCLK=18
-    -D TFT_CS=5
+    -D TFT_CS=5       ; Use -1 if your board is the 7-pin model (no CS)
     -D TFT_DC=2
     -D TFT_RST=4
     -D LOAD_GLCD=1
     -D LOAD_FONT2=1
     -D SPI_FREQUENCY=40000000
-
 ```
 
-### Passo 3: Compilar o Firmware (Build)
+### Step 3: Build the Firmware
 
-Na raiz do projeto, execute o comando abaixo para baixar automaticamente a biblioteca `TFT_eSPI` e compilar o código:
+From the project root, run the command below to automatically download the `TFT_eSPI` library and compile the code:
 
 ```bash
 pio run
-
 ```
 
-### Passo 4: Gravar na Placa (Upload)
+### Step 4: Flash the Board (Upload)
 
-Conecte o ESP32 DevKit V1 na porta USB e execute:
+Connect the ESP32 DevKit V1 to the USB port and run:
 
 ```bash
 pio run -t upload
-
 ```
 
-> **Dica de Gravação:** Se o terminal ficar aguardando em `Connecting........_____.....`, mantenha pressionado o botão físico **BOOT** na placa do ESP32 até o início da porcentagem de escrita (`Writing at 0x00001000...`) e solte em seguida.
+> **Flashing tip:** If the terminal hangs at `Connecting........_____.....`, hold down the physical **BOOT** button on the ESP32 board until the write percentage starts (`Writing at 0x00001000...`), then release it.
 
-### Passo 5: Monitor Serial (Opcional)
+### Step 5: Serial Monitor (Optional)
 
-Para acompanhar logs de inicialização:
+To follow the boot logs:
 
 ```bash
 pio device monitor -b 115200
-
 ```
 
 ---
 
-## 🧪 Testes Automatizados
+## 🧪 Automated Tests
 
-O projeto inclui **testes unitários** (`test/test_logic/`) e **de integração** (`test/test_integration/`) escritos com o framework **Unity** (embutido no PlatformIO). Eles rodam **no PC** (ambiente `native`), sem necessidade do ESP32, usando mocks do core Arduino e da `TFT_eSPI` (`test/mocks/`) que simulam joystick, botão, relógio (`micros()`) e sorteio de peças.
+The project includes **unit tests** (`test/test_logic/`) and **integration tests** (`test/test_integration/`) written with the **Unity** framework (bundled with PlatformIO). They run **on the PC** (the `native` environment), with no ESP32 required, using mocks of the Arduino core and `TFT_eSPI` (`test/mocks/`) that simulate the joystick, button, clock (`micros()`) and piece randomization.
 
 ```bash
 pio test -e native
-
 ```
 
-* **Unitários:** colisão (paredes, chão e blocos fixos), rotação (incluindo rotação bloqueada), limpeza de linhas, pontuação/nível, trava de peças e condições de *Game Over*.
-* **Integração:** dirigem o `Tetris::update()` quadro a quadro — gravidade a 60 FPS, movimento pelo joystick, *soft drop*, rotação *edge-triggered*, queda completa com spawn da próxima peça, empilhamento até *Game Over* e reinício pelo botão.
+* **Unit:** collision (walls, floor and locked blocks), rotation (including blocked rotation), line clearing, score/level, piece locking and *Game Over* conditions.
+* **Integration:** drive `Tetris::update()` frame by frame — gravity at 60 FPS, joystick movement, *soft drop*, *edge-triggered* rotation, full drop with next-piece spawn, stacking up to *Game Over* and restart via the button.
 
 ---
 
-## 🎮 Controles no Jogo
+## 🎮 In-Game Controls
 
-* **Mover para Esquerda / Direita:** Empurrar o analógico no eixo **X**.
-* **Rotacionar Peça (90° horário):** Empurrar o analógico para **Cima** ou pressionar o botão central (**SW**).
-* **Queda Rápida (*Soft Drop*):** Segurar o analógico para **Baixo**.
-* **Reiniciar após Game Over:** Pressionar o botão central (**SW**) ou empurrar o analógico para **Cima**.
+* **Move Left / Right:** Push the stick along the **X** axis.
+* **Rotate Piece (90° clockwise):** Push the stick **Up** or press the center button (**SW**).
+* **Soft Drop:** Hold the stick **Down**.
+* **Restart after Game Over:** Press the center button (**SW**).
 
 ---
 
-## 🔧 Calibração Rápida (Caso os Eixos Fiquem Invertidos)
+## 🔧 Quick Calibration (If the Axes Are Inverted)
 
-Dependendo da orientação física em que o módulo joystick for encaixado na protoboard, caso **Esquerda/Direita** ou **Cima/Baixo** fiquem invertidos, basta inverter as comparações `< DEADZONE_LOW` e `> DEADZONE_HIGH` dentro de `TetrisGame::update()` no arquivo `src/tetris.cpp`.
-
-```
-
-```
+Depending on the physical orientation in which the joystick module is placed on the breadboard, if **Left/Right** or **Up/Down** end up inverted, simply swap the `< JOYSTICK_DEADZONE_LOW` and `> JOYSTICK_DEADZONE_HIGH` comparisons inside `Tetris::update()` in `src/tetris.cpp`.
