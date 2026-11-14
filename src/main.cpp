@@ -14,9 +14,10 @@ unsigned long lastFrameTime = 0;
 int moveFrameCounter = 0; // Counter for move delay frames
 int fallFrameCounter = 0; // Counter for fall delay frames
 
-const int MOVE_DELAY_FRAMES = 7; // Number of frames to wait before allowing another move
-const int DROP_DELAY_FRAMES = 3; // Number of frames to wait before allowing another fall
-int gravityFrames = 30;          // Number of frames for gravity to act on the piece (0.5 seconds at 60 FPS)
+const int MOVE_DELAY_FRAMES = 7;           // Number of frames to wait before allowing another move
+const int DROP_DELAY_FRAMES = 3;           // Number of frames to wait before allowing another fall
+const int INITAL_GRAVITY_FRAMES = 30;      // Initial number of frames for gravity to act on the piece (0.5 seconds at 60 FPS)
+int gravityFrames = INITAL_GRAVITY_FRAMES; // Number of frames for gravity to act on the piece (0.5 seconds at 60 FPS)
 
 // Serial communication baud rate
 const int SERIAL_BAUD_RATE = 115200;
@@ -73,7 +74,30 @@ int currentType, currentX, currentY;
 unsigned long lastFallTime = 0;
 bool rotateReleased = true; // Evita giro contínuo se segurar para cima/botão
 
-int fallSpeed = NORMAL_FALL_SPEED;
+int score = 0;
+bool gameOver = false;
+
+bool checkCollision(int newX, int newY, uint8_t shape[4][4])
+{
+
+  for (int row = 0; row < 4; row++)
+  {
+    for (int col = 0; col < 4; col++)
+    {
+      if (shape[row][col])
+      {
+        int bx = newX + col;
+        int by = newY + row;
+
+        if (by >= BOARD_ROWS || bx < 0 || bx >= BOARD_COLS || (by >= 0 && board[by][bx] != 0))
+        {
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+}
 
 void drawBlock(int column, int row, uint16_t color)
 {
@@ -120,7 +144,7 @@ void spawnShape()
 {
   currentType = random(0, 7);
   currentX = 3;
-  currentY = -1;
+  currentY = -4;
 
   // Copy the shape into the currentShape array
   for (int row = 0; row < 4; row++)
@@ -131,10 +155,20 @@ void spawnShape()
     }
   }
 
-  drawShape(false);
+  if (checkCollision(currentX, currentY, currentShape))
+  {
+    gameOver = true;
+    tft.fillRect(20, 100, 200, 45, TFT_RED);
+    tft.setTextColor(TFT_WHITE);
+    tft.setTextSize(2);
+    tft.setCursor(55, 115);
+    tft.print("GAME OVER");
+  }
+  else
+  {
+    drawShape(false);
+  }
 }
-
-
 
 void lockShape()
 {
@@ -157,27 +191,6 @@ void lockShape()
   spawnShape();
 }
 
-bool checkCollision(int newX, int newY, uint8_t shape[4][4])
-{
-
-  for (int row = 0; row < 4; row++)
-  {
-    for (int col = 0; col < 4; col++)
-    {
-      if (shape[row][col])
-      {
-        int bx = newX + col;
-        int by = newY + row;
-
-        if (by < 0 || by >= BOARD_ROWS || bx < 0 || bx >= BOARD_COLS || board[by][bx])
-        {
-          return true;
-        }
-      }
-    }
-  }
-  return false;
-}
 
 void rotatePiece()
 {
@@ -211,8 +224,9 @@ void resetGame()
   // reset the game board
   memset(board, 0, sizeof(board));
 
-  fallSpeed = NORMAL_FALL_SPEED;
+  gameOver = false;
   lastFrameTime = 0;
+  gravityFrames = INITAL_GRAVITY_FRAMES;
 
   // Clear the screen with black color
   tft.fillScreen(TFT_BLACK);
@@ -257,7 +271,17 @@ void loop()
     int joystickX = analogRead(JOYSTICK_X_PIN);
     int joystickY = analogRead(JOYSTICK_Y_PIN);
 
-    bool buttonPressed = digitalRead(JOYSTICK_BUTTON_PIN) == LOW;
+    bool buttonRotate = digitalRead(JOYSTICK_BUTTON_PIN) == LOW;
+
+    if (gameOver)
+    {
+      if (buttonRotate)
+      {
+        delay(300);
+        resetGame();
+      }
+      return;
+    }
 
     // Horizontal movement based in Frames
     if (joystickX < JOYSTICK_DEADZONE_LOW || joystickX > JOYSTICK_DEADZONE_HIGH)
@@ -286,7 +310,7 @@ void loop()
     }
 
     // Rotate shape
-    bool rotateShape = (joystickY < JOYSTICK_DEADZONE_LOW || buttonPressed); // Example condition for rotation, adjust as needed
+    bool rotateShape = (joystickY < JOYSTICK_DEADZONE_LOW || buttonRotate); // Example condition for rotation, adjust as needed
 
     if (rotateShape && rotateReleased)
     {
