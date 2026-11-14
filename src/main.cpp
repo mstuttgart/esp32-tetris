@@ -11,6 +11,13 @@ const int FPS = 60;
 const unsigned long DELTA_FRAME_TIME = 1000000 / FPS; // 16.666 microssegundos
 unsigned long lastFrameTime = 0;
 
+int moveFrameCounter = 0; // Counter for move delay frames
+int fallFrameCounter = 0; // Counter for fall delay frames
+
+const int MOVE_DELAY_FRAMES = 7; // Number of frames to wait before allowing another move
+const int DROP_DELAY_FRAMES = 3; // Number of frames to wait before allowing another fall
+int gravityFrames = 30; // Number of frames for gravity to act on the piece (0.5 seconds at 60 FPS)
+
 // Serial communication baud rate
 const int SERIAL_BAUD_RATE = 115200;
 
@@ -173,18 +180,24 @@ void loop()
 
   unsigned long currentTimeMillis = 0;
 
+  // Lock in 60 FPS (approximate frame timing)
   if (nowFrameTime - lastFrameTime >= DELTA_FRAME_TIME)
   {
 
     lastFrameTime = nowFrameTime;
 
-    currentTimeMillis = millis();
+
+    // Gravity / fall
+    fallFrameCounter++;
+
+    int targetFallFrame = DROP_DELAY_FRAMES; // Target number of frames to wait before allowing another fall
 
     currentSpeed = NORMAL_FALL_SPEED;
 
-    if (currentTimeMillis - lastFallTime >= currentSpeed)
+    if (fallFrameCounter >= targetFallFrame)
     {
-      lastFallTime = currentTimeMillis;
+      fallFrameCounter = 0;
+
       drawShape(true);
       currentY++;       // Move the shape down by one row each frame
       drawShape(false); // Redraw the shape at the new position
