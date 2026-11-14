@@ -1,5 +1,7 @@
 # 🕹️ ESP32 Tetris — 60 FPS & Analog Joystick
 
+[![PlatformIO CI (Tests & ESP32 Build)](https://github.com/mstuttgart/esp32-tetris/actions/workflows/ci.yml/badge.svg)](https://github.com/mstuttgart/esp32-tetris/actions/workflows/ci.yml) ![GitHub License](https://img.shields.io/github/license/mstuttgart/esp32-tetris)
+
 Modular, **object-oriented C++** implementation of the classic **Tetris** game for the **ESP32 DevKit V1** microcontroller, using a **1.54" TFT IPS ST7789 (240x240)** color display over hardware SPI and an **Analog Joystick (KY-023)** for input, with deterministic timing locked at **60 FPS**.
 
 ---
