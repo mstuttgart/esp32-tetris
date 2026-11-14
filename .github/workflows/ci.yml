@@ -1,0 +1,36 @@
+name: PlatformIO CI (Tests & ESP32 Build)
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Cache PlatformIO (speeds up future builds)
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pip
+            ~/.platformio/.cache
+          key: ${{ runner.os }}-pio-${{ hashFiles('**/platformio.ini') }}
+          restore-keys: |
+            ${{ runner.os }}-pio-
+
+      - name: Install Python and PlatformIO Core
+        run: |
+          python3 -m pip install --upgrade pip
+          pip install -U platformio
+
+      - name: Run Unit Tests (Native)
+        run: pio test -e native
+
+      - name: Build ESP32 Firmware
+        run: pio run -e upesy_wroom
